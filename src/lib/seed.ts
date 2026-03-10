@@ -17,7 +17,7 @@ async function seed() {
     console.log("Admin already exists.");
   } else {
     const hashed = await bcryptjs.hash("admin123", 12);
-    await Admin.create({ email: "admin@drnakhodas.com", password: hashed });
+    await Admin.create({ email: "admin", password: hashed });
     console.log("Admin created: admin / admin123");
   }
 
