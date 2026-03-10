@@ -10,17 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: 93.127.141.213
-          username: administrator
-          password: ${{ secrets.VPS_PASSWORD }}
-          script: |
+      - name: Deploy to VPS
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y sshpass
+          sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no administrator@93.127.141.213 "
             echo '${{ secrets.VPS_PASSWORD }}' | sudo -S bash -c '
               cd ~/dr-nakhoda-website &&
               git pull origin main &&
               npm install &&
               npm run build &&
-              pm2 restart drnakhoda || pm2 start npm --name "drnakhoda" -- start
+              pm2 restart drnakhoda || pm2 start npm --name drnakhoda -- start
             '
+          "
