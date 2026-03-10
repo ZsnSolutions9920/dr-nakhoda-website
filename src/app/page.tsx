@@ -74,9 +74,21 @@ export default function HomePage() {
   const [showBooking, setShowBooking] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
-  const treatmentsRef = useRef<HTMLDivElement>(null);
+  const treatmentsRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      setTimeout(() => {
+        node.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, []);
   const detailsRef = useRef<HTMLDivElement>(null);
-  const bookButtonRef = useRef<HTMLButtonElement>(null);
+  const bookButtonRef = useCallback((node: HTMLButtonElement | null) => {
+    if (node) {
+      setTimeout(() => {
+        node.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+    }
+  }, []);
   const bookingRef = useRef<HTMLDivElement>(null);
 
   const categoryTreatments = selectedCategory
@@ -91,24 +103,6 @@ export default function HomePage() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
-
-  // Auto-scroll to treatments list when a category is selected
-  useEffect(() => {
-    if (selectedCategory && treatmentsRef.current) {
-      setTimeout(() => {
-        treatmentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
-    }
-  }, [selectedCategory]);
-
-  // Auto-scroll to the "Book Appointment for X" button when a treatment is selected
-  useEffect(() => {
-    if (selected && bookButtonRef.current) {
-      setTimeout(() => {
-        bookButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
-    }
-  }, [selected]);
 
   // Auto-scroll to booking form when it becomes visible
   useEffect(() => {
