@@ -74,6 +74,7 @@ export default function HomePage() {
   const [showBooking, setShowBooking] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
+  const treatmentsRef = useRef<HTMLDivElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
   const bookingRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +90,15 @@ export default function HomePage() {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-scroll to treatments list when a category is selected
+  useEffect(() => {
+    if (selectedCategory && treatmentsRef.current) {
+      setTimeout(() => {
+        treatmentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [selectedCategory]);
 
   // Auto-scroll to treatment details when a treatment is selected
   useEffect(() => {
@@ -268,7 +278,7 @@ export default function HomePage() {
 
       {/* Treatments for Selected Category */}
       {selectedCategory && categoryTreatments.length > 0 && (
-        <section className="bg-white border-t border-gray-100">
+        <section className="bg-white border-t border-gray-100" ref={treatmentsRef}>
           <div className="section-padding">
             <div className="text-center mb-10">
               <h2 className="font-heading text-2xl md:text-3xl text-text mb-2">
