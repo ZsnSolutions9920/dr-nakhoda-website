@@ -76,6 +76,7 @@ export default function HomePage() {
 
   const treatmentsRef = useRef<HTMLDivElement>(null);
   const detailsRef = useRef<HTMLDivElement>(null);
+  const bookButtonRef = useRef<HTMLButtonElement>(null);
   const bookingRef = useRef<HTMLDivElement>(null);
 
   const categoryTreatments = selectedCategory
@@ -100,11 +101,11 @@ export default function HomePage() {
     }
   }, [selectedCategory]);
 
-  // Auto-scroll to treatment details when a treatment is selected
+  // Auto-scroll to the "Book Appointment for X" button when a treatment is selected
   useEffect(() => {
-    if (selected && detailsRef.current) {
+    if (selected && bookButtonRef.current) {
       setTimeout(() => {
-        detailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        bookButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
     }
   }, [selected]);
@@ -278,7 +279,7 @@ export default function HomePage() {
 
       {/* Treatments for Selected Category */}
       {selectedCategory && categoryTreatments.length > 0 && (
-        <section className="bg-white border-t border-gray-100" ref={treatmentsRef}>
+        <section ref={treatmentsRef} className="bg-white border-t border-gray-100">
           <div className="section-padding">
             <div className="text-center mb-10">
               <h2 className="font-heading text-2xl md:text-3xl text-text mb-2">
@@ -380,6 +381,7 @@ export default function HomePage() {
                   </div>
 
                   <button
+                    ref={bookButtonRef}
                     onClick={handleBookClick}
                     className="btn-primary w-full text-center"
                   >
