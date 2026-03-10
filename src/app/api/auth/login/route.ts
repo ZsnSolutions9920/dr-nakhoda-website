@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const isValid = await bcryptjs.compare(password, admin.password);
     if (!isValid) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      return NextResponse.json({ error: "Invalid credentials**" }, { status: 401 });
     }
 
     const token = await createToken({ email: admin.email, id: admin._id.toString() });
