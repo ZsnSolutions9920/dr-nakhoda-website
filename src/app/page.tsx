@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { treatments, serviceCategories } from "@/lib/treatments";
+import { allServices, countSubServices } from "@/lib/services";
+import type { SubService } from "@/lib/services";
 import { BookingForm } from "@/components/BookingForm";
 import { BrandCarousel } from "@/components/BrandCarousel";
 import { VideoTestimonials } from "@/components/VideoTestimonials";
@@ -68,33 +69,25 @@ const newsArticles = [
   },
 ];
 
+const homeServices = allServices.slice(0, 8);
+
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedTreatment, setSelectedTreatment] = useState<string | null>(null);
+  const [expandedSubService, setExpandedSubService] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
   const [showBooking, setShowBooking] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
-  const treatmentsRef = useCallback((node: HTMLDivElement | null) => {
+  const subServicesRef = useCallback((node: HTMLDivElement | null) => {
     if (node) {
       setTimeout(() => {
         node.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
     }
   }, []);
-  const detailsRef = useRef<HTMLDivElement>(null);
-  const bookButtonRef = useCallback((node: HTMLButtonElement | null) => {
-    if (node) {
-      setTimeout(() => {
-        node.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
-    }
-  }, []);
   const bookingRef = useRef<HTMLDivElement>(null);
 
-  const categoryTreatments = selectedCategory
-    ? treatments.filter((t) => t.category === selectedCategory)
-    : [];
-  const selected = treatments.find((t) => t.id === selectedTreatment);
+  const selectedCategoryData = allServices.find((s) => s.name === selectedCategory);
 
   // Auto-rotate testimonials
   useEffect(() => {
@@ -114,36 +107,75 @@ export default function HomePage() {
   }, [showBooking]);
 
   const handleCategorySelect = useCallback(
-    (category: string) => {
-      if (selectedCategory === category) {
+    (categoryName: string) => {
+      const category = allServices.find((s) => s.name === categoryName);
+      if (!category) return;
+
+      if (category.subServices.length === 0) {
+        if (selectedCategory === categoryName && showBooking) {
+          setSelectedCategory(null);
+          setExpandedSubService(null);
+          setSelectedService(null);
+          setShowBooking(false);
+        } else {
+          setSelectedCategory(categoryName);
+          setExpandedSubService(null);
+          setSelectedService(categoryName);
+          setShowBooking(true);
+        }
+        return;
+      }
+
+      if (selectedCategory === categoryName) {
         setSelectedCategory(null);
-        setSelectedTreatment(null);
+        setExpandedSubService(null);
+        setSelectedService(null);
         setShowBooking(false);
       } else {
-        setSelectedCategory(category);
-        setSelectedTreatment(null);
+        setSelectedCategory(categoryName);
+        setExpandedSubService(null);
+        setSelectedService(null);
         setShowBooking(false);
       }
     },
-    [selectedCategory]
+    [selectedCategory, showBooking]
   );
 
-  const handleTreatmentSelect = useCallback(
-    (id: string) => {
-      if (selectedTreatment === id) {
-        setSelectedTreatment(null);
+  const handleSubServiceClick = useCallback(
+    (sub: SubService) => {
+      if (sub.children && sub.children.length > 0) {
+        if (expandedSubService === sub.name) {
+          setExpandedSubService(null);
+        } else {
+          setExpandedSubService(sub.name);
+        }
+        setSelectedService(null);
         setShowBooking(false);
       } else {
-        setSelectedTreatment(id);
-        setShowBooking(false);
+        if (selectedService === sub.name) {
+          setSelectedService(null);
+          setShowBooking(false);
+        } else {
+          setSelectedService(sub.name);
+          setShowBooking(true);
+        }
       }
     },
-    [selectedTreatment]
+    [expandedSubService, selectedService]
   );
 
-  const handleBookClick = useCallback(() => {
-    setShowBooking(true);
-  }, []);
+  const handleChildClick = useCallback(
+    (child: string) => {
+      if (selectedService === child) {
+        setSelectedService(null);
+        setShowBooking(false);
+      } else {
+        setSelectedService(child);
+        setShowBooking(true);
+      }
+    },
+    [selectedService]
+  );
 
   return (
     <>
@@ -241,155 +273,152 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            {serviceCategories.map((category) => (
+            {homeServices.map((service) => (
               <button
-                key={category}
-                onClick={() => handleCategorySelect(category)}
+                key={service.name}
+                onClick={() => handleCategorySelect(service.name)}
                 className={`rounded-2xl p-5 text-left transition-all duration-300 cursor-pointer border ${
-                  selectedCategory === category
+                  selectedCategory === service.name
                     ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.02]"
                     : "bg-white text-text border-gray-100 hover:border-primary/30 hover:shadow-md"
                 }`}
               >
                 <h3
                   className={`font-medium text-sm leading-snug ${
-                    selectedCategory === category ? "text-white" : "text-text"
+                    selectedCategory === service.name ? "text-white" : "text-text"
                   }`}
                 >
-                  {category}
+                  {service.name}
                 </h3>
                 <p
                   className={`text-xs mt-1 ${
-                    selectedCategory === category ? "text-white/70" : "text-text-light"
+                    selectedCategory === service.name ? "text-white/70" : "text-text-light"
                   }`}
                 >
-                  {treatments.filter((t) => t.category === category).length} treatments
+                  {countSubServices(service)} treatment{countSubServices(service) !== 1 ? "s" : ""}
                 </p>
               </button>
             ))}
           </div>
+
+          <div className="text-center mt-8">
+            <Link href="/treatments" className="btn-secondary">
+              See All Services
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Treatments for Selected Category */}
-      {selectedCategory && categoryTreatments.length > 0 && (
-        <section ref={treatmentsRef} className="bg-white border-t border-gray-100">
+      {/* Sub-Services for Selected Category */}
+      {selectedCategory && selectedCategoryData && selectedCategoryData.subServices.length > 0 && (
+        <section ref={subServicesRef} className="bg-white border-t border-gray-100">
           <div className="section-padding">
             <div className="text-center mb-10">
               <h2 className="font-heading text-2xl md:text-3xl text-text mb-2">
                 {selectedCategory}
               </h2>
-              <p className="text-text-light text-sm">Choose a treatment to learn more</p>
+              <p className="text-text-light text-sm">
+                Choose a treatment to book your appointment
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-              {categoryTreatments.map((treatment) => (
-                <button
-                  key={treatment.id}
-                  onClick={() => handleTreatmentSelect(treatment.id)}
-                  className={`card p-4 text-left cursor-pointer group ${
-                    selectedTreatment === treatment.id
-                      ? "ring-2 ring-primary bg-gold/5"
-                      : ""
-                  }`}
-                >
-                  <div className="relative h-32 rounded-xl overflow-hidden mb-3">
-                    <Image
-                      src={treatment.image}
-                      alt={treatment.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  </div>
-                  <h3 className="font-medium text-sm text-text leading-snug">
-                    {treatment.name}
-                  </h3>
-                  <p className="text-xs text-text-light mt-1 line-clamp-2">
-                    {treatment.shortDescription}
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
+              {selectedCategoryData.subServices.map((sub) => {
+                const hasChildren = sub.children && sub.children.length > 0;
+                const isExpanded = expandedSubService === sub.name;
 
-      {/* Treatment Details (Expanded) */}
-      {selected && (
-        <section className="bg-cream border-t border-gray-100" ref={detailsRef}>
-          <div className="section-padding">
-            <div className="grid lg:grid-cols-2 gap-12 items-start">
-              <div className="relative rounded-2xl overflow-hidden h-[400px] lg:h-[500px]">
-                <Image
-                  src={selected.image}
-                  alt={selected.name}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-
-              <div>
-                <p className="text-gold font-medium text-sm uppercase tracking-wide mb-2">
-                  {selected.category}
-                </p>
-                <h2 className="font-heading text-3xl md:text-4xl text-text mb-4">
-                  {selected.name}
-                </h2>
-                <p className="text-text-light leading-relaxed mb-6">{selected.description}</p>
-
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="font-medium text-text mb-2">Benefits</h3>
-                    <ul className="space-y-2">
-                      {selected.benefits.map((b, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-sm text-text-light"
+                return (
+                  <div key={sub.name} className="flex flex-col">
+                    <button
+                      onClick={() => handleSubServiceClick(sub)}
+                      className={`rounded-xl px-5 py-4 text-left transition-all duration-300 cursor-pointer border ${
+                        hasChildren && isExpanded
+                          ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
+                          : selectedService === sub.name
+                            ? "bg-gold/10 border-gold ring-2 ring-gold/30 shadow-sm"
+                            : "bg-cream/50 border-gray-100 hover:border-gold/30 hover:bg-cream hover:shadow-sm"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {hasChildren ? (
+                          <svg
+                            className={`w-4 h-4 shrink-0 text-primary transition-transform duration-200 ${
+                              isExpanded ? "rotate-90" : ""
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        ) : (
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
+                              selectedService === sub.name ? "bg-gold" : "bg-gold/30"
+                            }`}
+                          />
+                        )}
+                        <span
+                          className={`text-sm leading-snug ${
+                            hasChildren
+                              ? "font-medium text-primary"
+                              : selectedService === sub.name
+                                ? "text-text font-medium"
+                                : "text-text-light"
+                          }`}
                         >
-                          <span className="text-gold mt-0.5">&#10003;</span>
-                          {b}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                          {sub.name}
+                        </span>
+                      </div>
+                    </button>
 
-                  <div>
-                    <h3 className="font-medium text-text mb-2">Who Is It For?</h3>
-                    <p className="text-sm text-text-light">{selected.whoIsItFor}</p>
+                    {hasChildren && isExpanded && (
+                      <div className="mt-1 ml-4 space-y-1">
+                        {sub.children!.map((child) => (
+                          <button
+                            key={child}
+                            onClick={() => handleChildClick(child)}
+                            className={`w-full rounded-lg px-4 py-3 text-left transition-all duration-200 cursor-pointer border ${
+                              selectedService === child
+                                ? "bg-gold/10 border-gold ring-2 ring-gold/30 shadow-sm"
+                                : "bg-white border-gray-100 hover:border-gold/30 hover:bg-cream/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
+                                  selectedService === child ? "bg-gold" : "bg-gold/20"
+                                }`}
+                              />
+                              <span
+                                className={`text-sm leading-snug ${
+                                  selectedService === child
+                                    ? "text-text font-medium"
+                                    : "text-text-light"
+                                }`}
+                              >
+                                {child}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-
-                  <div>
-                    <h3 className="font-medium text-text mb-2">The Procedure</h3>
-                    <p className="text-sm text-text-light">{selected.procedure}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white rounded-xl p-4">
-                      <h4 className="font-medium text-sm text-text mb-1">Expected Results</h4>
-                      <p className="text-xs text-text-light">{selected.results}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4">
-                      <h4 className="font-medium text-sm text-text mb-1">Recovery</h4>
-                      <p className="text-xs text-text-light">{selected.recovery}</p>
-                    </div>
-                  </div>
-
-                  <button
-                    ref={bookButtonRef}
-                    onClick={handleBookClick}
-                    className="btn-primary w-full text-center"
-                  >
-                    Book Appointment for {selected.name}
-                  </button>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
         </section>
       )}
 
       {/* Booking Form Section */}
-      {showBooking && selected && (
+      {showBooking && selectedService && (
         <section
           ref={bookingRef}
           className="bg-gradient-to-b from-white to-cream border-t border-gray-100"
@@ -405,11 +434,11 @@ export default function HomePage() {
                 </h2>
                 <p className="text-text-light">
                   Fill in your details below for{" "}
-                  <span className="text-gold font-medium">{selected.name}</span> and our
+                  <span className="text-gold font-medium">{selectedService}</span> and our
                   team will get back to you shortly.
                 </p>
               </div>
-              <BookingForm selectedService={selected.name} />
+              <BookingForm selectedService={selectedService} />
             </div>
           </div>
         </section>
