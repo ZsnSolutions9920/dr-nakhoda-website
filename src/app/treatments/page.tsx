@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { allServices } from "@/lib/services";
+import { allServices, countSubServices } from "@/lib/services";
+import type { SubService } from "@/lib/services";
 import { BookingForm } from "@/components/BookingForm";
 
 export default function TreatmentsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedSubService, setSelectedSubService] = useState<string | null>(null);
+  const [expandedSubService, setExpandedSubService] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<string | null>(null);
   const [showBooking, setShowBooking] = useState(false);
 
   const subServicesRef = useCallback((node: HTMLDivElement | null) => {
@@ -38,11 +40,13 @@ export default function TreatmentsPage() {
       if (category.subServices.length === 0) {
         if (selectedCategory === categoryName && showBooking) {
           setSelectedCategory(null);
-          setSelectedSubService(null);
+          setExpandedSubService(null);
+          setSelectedService(null);
           setShowBooking(false);
         } else {
           setSelectedCategory(categoryName);
-          setSelectedSubService(categoryName);
+          setExpandedSubService(null);
+          setSelectedService(categoryName);
           setShowBooking(true);
         }
         return;
@@ -50,28 +54,55 @@ export default function TreatmentsPage() {
 
       if (selectedCategory === categoryName) {
         setSelectedCategory(null);
-        setSelectedSubService(null);
+        setExpandedSubService(null);
+        setSelectedService(null);
         setShowBooking(false);
       } else {
         setSelectedCategory(categoryName);
-        setSelectedSubService(null);
+        setExpandedSubService(null);
+        setSelectedService(null);
         setShowBooking(false);
       }
     },
     [selectedCategory, showBooking]
   );
 
-  const handleSubServiceSelect = useCallback(
-    (subService: string) => {
-      if (selectedSubService === subService) {
-        setSelectedSubService(null);
+  const handleSubServiceClick = useCallback(
+    (sub: SubService) => {
+      // If it has children, toggle expand to show children
+      if (sub.children && sub.children.length > 0) {
+        if (expandedSubService === sub.name) {
+          setExpandedSubService(null);
+        } else {
+          setExpandedSubService(sub.name);
+        }
+        setSelectedService(null);
         setShowBooking(false);
       } else {
-        setSelectedSubService(subService);
+        // Leaf item — select it and show booking
+        if (selectedService === sub.name) {
+          setSelectedService(null);
+          setShowBooking(false);
+        } else {
+          setSelectedService(sub.name);
+          setShowBooking(true);
+        }
+      }
+    },
+    [expandedSubService, selectedService]
+  );
+
+  const handleChildClick = useCallback(
+    (child: string) => {
+      if (selectedService === child) {
+        setSelectedService(null);
+        setShowBooking(false);
+      } else {
+        setSelectedService(child);
         setShowBooking(true);
       }
     },
-    [selectedSubService]
+    [selectedService]
   );
 
   return (
@@ -126,9 +157,7 @@ export default function TreatmentsPage() {
                     selectedCategory === service.name ? "text-white/70" : "text-text-light"
                   }`}
                 >
-                  {service.subServices.length > 0
-                    ? `${service.subServices.length} treatments`
-                    : "1 treatment"}
+                  {countSubServices(service)} treatment{countSubServices(service) !== 1 ? "s" : ""}
                 </p>
               </button>
             ))}
@@ -150,41 +179,104 @@ export default function TreatmentsPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
-              {selectedCategoryData.subServices.map((subService) => (
-                <button
-                  key={subService}
-                  onClick={() => handleSubServiceSelect(subService)}
-                  className={`rounded-xl px-5 py-4 text-left transition-all duration-300 cursor-pointer border ${
-                    selectedSubService === subService
-                      ? "bg-gold/10 border-gold ring-2 ring-gold/30 shadow-sm"
-                      : "bg-cream/50 border-gray-100 hover:border-gold/30 hover:bg-cream hover:shadow-sm"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
-                        selectedSubService === subService ? "bg-gold" : "bg-gold/30"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm leading-snug ${
-                        selectedSubService === subService
-                          ? "text-text font-medium"
-                          : "text-text-light"
+              {selectedCategoryData.subServices.map((sub) => {
+                const hasChildren = sub.children && sub.children.length > 0;
+                const isExpanded = expandedSubService === sub.name;
+
+                return (
+                  <div key={sub.name} className="flex flex-col">
+                    {/* Sub-service button */}
+                    <button
+                      onClick={() => handleSubServiceClick(sub)}
+                      className={`rounded-xl px-5 py-4 text-left transition-all duration-300 cursor-pointer border ${
+                        hasChildren && isExpanded
+                          ? "bg-primary/10 border-primary/30 ring-1 ring-primary/20"
+                          : selectedService === sub.name
+                            ? "bg-gold/10 border-gold ring-2 ring-gold/30 shadow-sm"
+                            : "bg-cream/50 border-gray-100 hover:border-gold/30 hover:bg-cream hover:shadow-sm"
                       }`}
                     >
-                      {subService}
-                    </span>
+                      <div className="flex items-center gap-3">
+                        {hasChildren ? (
+                          <svg
+                            className={`w-4 h-4 shrink-0 text-primary transition-transform duration-200 ${
+                              isExpanded ? "rotate-90" : ""
+                            }`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        ) : (
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
+                              selectedService === sub.name ? "bg-gold" : "bg-gold/30"
+                            }`}
+                          />
+                        )}
+                        <span
+                          className={`text-sm leading-snug ${
+                            hasChildren
+                              ? "font-medium text-primary"
+                              : selectedService === sub.name
+                                ? "text-text font-medium"
+                                : "text-text-light"
+                          }`}
+                        >
+                          {sub.name}
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* Children (nested sub-services) */}
+                    {hasChildren && isExpanded && (
+                      <div className="mt-1 ml-4 space-y-1">
+                        {sub.children!.map((child) => (
+                          <button
+                            key={child}
+                            onClick={() => handleChildClick(child)}
+                            className={`w-full rounded-lg px-4 py-3 text-left transition-all duration-200 cursor-pointer border ${
+                              selectedService === child
+                                ? "bg-gold/10 border-gold ring-2 ring-gold/30 shadow-sm"
+                                : "bg-white border-gray-100 hover:border-gold/30 hover:bg-cream/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
+                                  selectedService === child ? "bg-gold" : "bg-gold/20"
+                                }`}
+                              />
+                              <span
+                                className={`text-sm leading-snug ${
+                                  selectedService === child
+                                    ? "text-text font-medium"
+                                    : "text-text-light"
+                                }`}
+                              >
+                                {child}
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>
       )}
 
       {/* Booking Form Section */}
-      {showBooking && selectedSubService && (
+      {showBooking && selectedService && (
         <section
           ref={bookingRef}
           className="bg-gradient-to-b from-white to-cream border-t border-gray-100"
@@ -200,11 +292,11 @@ export default function TreatmentsPage() {
                 </h2>
                 <p className="text-text-light">
                   Fill in your details below for{" "}
-                  <span className="text-gold font-medium">{selectedSubService}</span> and
+                  <span className="text-gold font-medium">{selectedService}</span> and
                   our team will get back to you shortly.
                 </p>
               </div>
-              <BookingForm selectedService={selectedSubService} />
+              <BookingForm selectedService={selectedService} />
             </div>
           </div>
         </section>
