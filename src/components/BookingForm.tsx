@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { treatments } from "@/lib/treatments";
+import { getAllSubServiceNames } from "@/lib/services";
 
 interface BookingFormProps {
   selectedService?: string;
@@ -106,9 +106,9 @@ export function BookingForm({ selectedService }: BookingFormProps) {
             className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all text-sm bg-white"
           >
             <option value="">Choose a treatment</option>
-            {treatments.map((t) => (
-              <option key={t.id} value={t.name}>
-                {t.name}
+            {getAllSubServiceNames().map((name) => (
+              <option key={name} value={name}>
+                {name}
               </option>
             ))}
           </select>

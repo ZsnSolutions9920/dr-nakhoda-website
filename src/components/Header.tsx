@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
-import { serviceCategories, categoryToSlug } from "@/lib/treatments";
+import { allServiceCategoryNames } from "@/lib/services";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -94,17 +94,19 @@ export function Header() {
                 {desktopDropdownOpen && (
                   <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3">
                     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 py-3 w-64 overflow-hidden">
-                      {serviceCategories.map((category) => (
-                        <Link
-                          key={category}
-                          href={`/services/${categoryToSlug(category)}`}
-                          onClick={() => setDesktopDropdownOpen(false)}
-                          className="flex items-center gap-3 px-5 py-3 text-sm text-text-light hover:bg-cream hover:text-primary transition-colors"
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-gold/40 shrink-0" />
-                          {category}
-                        </Link>
-                      ))}
+                      <div className="max-h-80 overflow-y-auto">
+                        {allServiceCategoryNames.map((category) => (
+                          <Link
+                            key={category}
+                            href="/treatments"
+                            onClick={() => setDesktopDropdownOpen(false)}
+                            className="flex items-center gap-3 px-5 py-2.5 text-sm text-text-light hover:bg-cream hover:text-primary transition-colors"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-gold/40 shrink-0" />
+                            {category}
+                          </Link>
+                        ))}
+                      </div>
                       <div className="border-t border-gray-100 mt-2 pt-2">
                         <Link
                           href="/treatments"
@@ -183,11 +185,11 @@ export function Header() {
 
                 {/* Mobile services list */}
                 {mobileServicesOpen && (
-                  <div className="bg-cream/50 rounded-xl my-1">
-                    {serviceCategories.map((category) => (
+                  <div className="bg-cream/50 rounded-xl my-1 max-h-64 overflow-y-auto">
+                    {allServiceCategoryNames.map((category) => (
                       <Link
                         key={category}
-                        href={`/services/${categoryToSlug(category)}`}
+                        href="/treatments"
                         onClick={() => {
                           setMobileOpen(false);
                           setMobileServicesOpen(false);

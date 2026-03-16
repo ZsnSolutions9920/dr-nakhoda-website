@@ -1,8 +1,79 @@
-import Image from "next/image";
-import Link from "next/link";
-import { treatments, serviceCategories, categoryToSlug } from "@/lib/treatments";
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import { allServices } from "@/lib/services";
+import { BookingForm } from "@/components/BookingForm";
 
 export default function TreatmentsPage() {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedSubService, setSelectedSubService] = useState<string | null>(null);
+  const [showBooking, setShowBooking] = useState(false);
+
+  const subServicesRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      setTimeout(() => {
+        node.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, []);
+
+  const bookingRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showBooking && bookingRef.current) {
+      setTimeout(() => {
+        bookingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [showBooking]);
+
+  const selectedCategoryData = allServices.find((s) => s.name === selectedCategory);
+
+  const handleCategorySelect = useCallback(
+    (categoryName: string) => {
+      const category = allServices.find((s) => s.name === categoryName);
+      if (!category) return;
+
+      // If category has no sub-services, go straight to booking
+      if (category.subServices.length === 0) {
+        if (selectedCategory === categoryName && showBooking) {
+          setSelectedCategory(null);
+          setSelectedSubService(null);
+          setShowBooking(false);
+        } else {
+          setSelectedCategory(categoryName);
+          setSelectedSubService(categoryName);
+          setShowBooking(true);
+        }
+        return;
+      }
+
+      if (selectedCategory === categoryName) {
+        setSelectedCategory(null);
+        setSelectedSubService(null);
+        setShowBooking(false);
+      } else {
+        setSelectedCategory(categoryName);
+        setSelectedSubService(null);
+        setShowBooking(false);
+      }
+    },
+    [selectedCategory, showBooking]
+  );
+
+  const handleSubServiceSelect = useCallback(
+    (subService: string) => {
+      if (selectedSubService === subService) {
+        setSelectedSubService(null);
+        setShowBooking(false);
+      } else {
+        setSelectedSubService(subService);
+        setShowBooking(true);
+      }
+    },
+    [selectedSubService]
+  );
+
   return (
     <>
       {/* Hero */}
@@ -15,94 +86,129 @@ export default function TreatmentsPage() {
             Advanced Skin & Aesthetic Treatments
           </h1>
           <p className="text-text-light max-w-2xl mx-auto">
-            From skin rejuvenation to body contouring, we offer a comprehensive range of
-            FDA-approved treatments tailored to your unique needs.
+            Select a service category to explore our treatments and book your appointment.
           </p>
         </div>
       </section>
 
-      {/* Service Category Cards */}
-      {serviceCategories.map((category) => {
-        const categoryTreatments = treatments.filter((t) => t.category === category);
-        if (categoryTreatments.length === 0) return null;
-        const slug = categoryToSlug(category);
+      {/* Service Categories Grid */}
+      <section id="services" className="bg-warm">
+        <div className="section-padding">
+          <div className="text-center mb-12">
+            <h2 className="font-heading text-3xl md:text-4xl text-text mb-4">
+              What Are You Looking For?
+            </h2>
+            <p className="text-text-light max-w-2xl mx-auto">
+              Choose a service category below to see all available treatments.
+            </p>
+          </div>
 
-        return (
-          <section key={category} className="bg-white border-b border-gray-100">
-            <div className="section-padding">
-              <div className="flex items-end justify-between mb-8">
-                <div>
-                  <h2 className="font-heading text-2xl md:text-3xl text-text">
-                    {category}
-                  </h2>
-                  <p className="text-text-light text-sm mt-1">
-                    {categoryTreatments.length} treatments available
-                  </p>
-                </div>
-                <Link
-                  href={`/services/${slug}`}
-                  className="text-sm font-medium text-gold hover:underline hidden sm:inline-flex items-center gap-1"
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-w-5xl mx-auto">
+            {allServices.map((service) => (
+              <button
+                key={service.name}
+                onClick={() => handleCategorySelect(service.name)}
+                className={`rounded-2xl p-5 text-left transition-all duration-300 cursor-pointer border ${
+                  selectedCategory === service.name
+                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-[1.02]"
+                    : "bg-white text-text border-gray-100 hover:border-primary/30 hover:shadow-md"
+                }`}
+              >
+                <h3
+                  className={`font-medium text-sm leading-snug ${
+                    selectedCategory === service.name ? "text-white" : "text-text"
+                  }`}
                 >
-                  View All
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {categoryTreatments.map((treatment) => (
-                  <div key={treatment.id} className="card">
-                    <div className="relative h-56">
-                      <Image
-                        src={treatment.image}
-                        alt={treatment.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="p-6">
-                      <h3 className="font-heading text-xl text-text mb-2">
-                        {treatment.name}
-                      </h3>
-                      <p className="text-sm text-text-light mb-4 leading-relaxed">
-                        {treatment.shortDescription}
-                      </p>
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-text mb-2">Benefits:</h4>
-                        <ul className="space-y-1">
-                          {treatment.benefits.slice(0, 3).map((b, i) => (
-                            <li key={i} className="text-xs text-text-light flex items-start gap-2">
-                              <span className="text-gold mt-0.5">&#10003;</span>
-                              {b}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <Link
-                        href={`/services/${slug}#${treatment.id}`}
-                        className="btn-primary text-sm w-full text-center"
-                      >
-                        Learn More
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 text-center sm:hidden">
-                <Link
-                  href={`/services/${slug}`}
-                  className="text-sm font-medium text-gold hover:underline inline-flex items-center gap-1"
+                  {service.name}
+                </h3>
+                <p
+                  className={`text-xs mt-1 ${
+                    selectedCategory === service.name ? "text-white/70" : "text-text-light"
+                  }`}
                 >
-                  View All {category}
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              </div>
+                  {service.subServices.length > 0
+                    ? `${service.subServices.length} treatments`
+                    : "1 treatment"}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Sub-Services for Selected Category */}
+      {selectedCategory && selectedCategoryData && selectedCategoryData.subServices.length > 0 && (
+        <section ref={subServicesRef} className="bg-white border-t border-gray-100">
+          <div className="section-padding">
+            <div className="text-center mb-10">
+              <h2 className="font-heading text-2xl md:text-3xl text-text mb-2">
+                {selectedCategory}
+              </h2>
+              <p className="text-text-light text-sm">
+                Choose a treatment to book your appointment
+              </p>
             </div>
-          </section>
-        );
-      })}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
+              {selectedCategoryData.subServices.map((subService) => (
+                <button
+                  key={subService}
+                  onClick={() => handleSubServiceSelect(subService)}
+                  className={`rounded-xl px-5 py-4 text-left transition-all duration-300 cursor-pointer border ${
+                    selectedSubService === subService
+                      ? "bg-gold/10 border-gold ring-2 ring-gold/30 shadow-sm"
+                      : "bg-cream/50 border-gray-100 hover:border-gold/30 hover:bg-cream hover:shadow-sm"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 transition-colors ${
+                        selectedSubService === subService ? "bg-gold" : "bg-gold/30"
+                      }`}
+                    />
+                    <span
+                      className={`text-sm leading-snug ${
+                        selectedSubService === subService
+                          ? "text-text font-medium"
+                          : "text-text-light"
+                      }`}
+                    >
+                      {subService}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Booking Form Section */}
+      {showBooking && selectedSubService && (
+        <section
+          ref={bookingRef}
+          className="bg-gradient-to-b from-white to-cream border-t border-gray-100"
+        >
+          <div className="section-padding">
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-10">
+                <p className="text-gold font-medium text-sm uppercase tracking-wide mb-2">
+                  Almost There!
+                </p>
+                <h2 className="font-heading text-3xl md:text-4xl text-text mb-4">
+                  Book Your Appointment
+                </h2>
+                <p className="text-text-light">
+                  Fill in your details below for{" "}
+                  <span className="text-gold font-medium">{selectedSubService}</span> and
+                  our team will get back to you shortly.
+                </p>
+              </div>
+              <BookingForm selectedService={selectedSubService} />
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="bg-primary">
@@ -114,12 +220,12 @@ export default function TreatmentsPage() {
             Book a consultation and Dr. Nakhoda will create a personalized treatment
             plan based on your skin goals.
           </p>
-          <Link
-            href="/#services"
+          <a
+            href="#services"
             className="inline-flex items-center justify-center px-8 py-3 bg-white text-primary rounded-full font-medium hover:bg-cream transition-all"
           >
-            Book Consultation
-          </Link>
+            Browse Services
+          </a>
         </div>
       </section>
     </>
